@@ -1,0 +1,14 @@
+{
+  "SwaggerSettings": {
+    "Enable": true,
+    "Title": "Lumo PLC",
+    "Version": "v1",
+    "Description": "Lumo Partners API ",
+    "ContactName": "Lumo Dev Team",
+    "ContactEmail": "developer@Lumo.africa",
+    "ContactUrl": "",
+    "License": true,
+    "LicenseName": "MIT Lumo",
+    "LicenseUrl": "E"
+  }
+}

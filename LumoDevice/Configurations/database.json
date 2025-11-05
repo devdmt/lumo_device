@@ -1,0 +1,34 @@
+{
+  ///////mssql - local
+
+  //"databasesettings": {
+  //  "dbprovider": "mysql",
+  //  "connectionstring": "server=MNDOGOH\\MNDOGOH;userid=sa;password=Unknown@123;database=FCB_Popote;AllowZeroDateTime=true;ConvertZeroDateTime=true"
+  //}
+
+  //////postgresql - local
+
+  //"DatabaseSettings": {
+  //  "DBProvider": "postgresql",
+  //  "ConnectionString": "Server=127.0.0.1;Port=5432;Database=RiskSolve;User Id=postgres;Password=mvchr;Integrated Security=true;"
+  //}
+
+  /////postgresql - inserver
+
+  //"DatabaseSettings": {
+  //  "DBProvider": "postgresql",
+  //  "ConnectionString": "Server=127.0.0.1;Port=5432;Database=RiskSolve;User Id=postgres;Password=Dynamics322;Integrated Security=true;"
+  //}
+
+
+  /////mssql --docker
+
+  "databasesettings": {
+    "dbprovider": "mssql",
+    // "connectionstring": "data source=SVRKE078;user id=scapp;password=sAnlam@123;initial catalog=SanlamSC;integrated security=true;multipleactiveresultsets=true",
+    "connectionstring": "data source=MNDOGOH\\MNDOGOH;user id=sa;password=Unknown@123;initial catalog=LumoCore;integrated security=true;multipleactiveresultsets=true;TrustServerCertificate=True",
+    //"connectionstring": "data source=DESKTOP-9HU6DH7;user id=sa;password=12345678;initial catalog=SanlamOnboarding;integrated security=true;multipleactiveresultsets=true;TrustServerCertificate=True",
+    //"connectionstring": "data source=mndogoh;user id=sa;password=Unknown@123;initial catalog=SanlamSC;integrated security=true;multipleactiveresultsets=true;TrustServerCertificate=True",
+    "Cypher": "U2FubGFtQDEyMw=="
+  }
+}

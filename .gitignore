@@ -361,3 +361,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# JetBrains Rider IDE configuration
+.idea/
+
+# AI Assistant Documentation Files
+AGENTS.md
+GEMINI.md
+CLAUDE.md
+docs/

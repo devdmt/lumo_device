@@ -60,8 +60,10 @@ namespace API.Infrastructure.Application.ClaimManager
             var response = new ResponseDTO();
             try
             {
-                string procname = "select count(0) from [claimRequests] where lower(DispatchedCode)=lower('" + code.Code + "')" +
-                    " and DispatchedShopId='" + code.ShopId + "' ";
+                string procname = "select count(0) from [claimRequests] where lower(DispatchedCode)=lower('" + code.Code + "')";
+                //remember to return this method here pls     
+                //+
+                    //" and DispatchedShopId='" + code.ShopId + "' ";
 
                 int codecount = (int)await _db.Connection.ExecuteScalarAsync(procname);
                 if (codecount > 0)
@@ -109,6 +111,30 @@ namespace API.Infrastructure.Application.ClaimManager
             {
                 response.Success = false;
                 response.ErrorMsg = "error while making the request ";
+            }
+            return response;
+        }
+
+        public async Task<ResponseDTO> RecordExcessPayment(RecordExcessPaymentDTO request)
+        {
+            var response = new ResponseDTO();
+            try
+            {
+                string procname = "UPDATE [dbo].[ClaimExcess]   " +
+                    "SET [Amount] ='"+ request.ExcessAmount +"' ,[PaymentStatus] ='"+
+                    (int) request.PaymentexcessStatus +"',[PaymentNarration] ='"+ request.Remarks +"'" +
+                    " ,[PaymentReference] ='"+ request.TransactionRef +"'  ,[RecordedBy] ='"+ 
+                    request.userId +"',[RecordedOn] = getdate() ,[ShopId] ='"+ request.shopId+"' " +
+                    ",[PaymentMode] ="+ (int) request.PaymentMode +" WHERE ClaimRequestId='"+ request.ClaimId +"'";
+               await _db.Connection.ExecuteAsync(procname);
+                response.ErrorMsg = "";
+                response.Success = true;
+               
+            }
+            catch (Exception ex)
+            {
+                _isettings.LogRequests(ex.Message, "RecordExcessPayment", RequestType.Error);
+                response.Success = false;
             }
             return response;
         }
@@ -381,6 +407,21 @@ namespace API.Infrastructure.Application.ClaimManager
                     // return response;
 
                 }
+                var  waitingdayscount =await _db.Connection.QueryFirstOrDefaultAsync<WaitingPeriodDTO>("SELECT  ISNULL(cwp.WaitingPeriod, 0) AS WaitingPeriod, DATEDIFF(DAY, pir.RequestedOn, GETDATE())" +
+                    " AS DaysElapsed, CASE  WHEN DATEDIFF(DAY, pir.RequestedOn, GETDATE()) >= ISNULL(cwp.WaitingPeriod, 0)  THEN 0   " +
+                    " ELSE ISNULL(cwp.WaitingPeriod, 0)  - DATEDIFF(DAY, pir.RequestedOn, GETDATE()) " +
+                    "   END AS RemainingDays FROM [dbo].[PhoneInsuranceRequest] " +
+                    "pir CROSS JOIN [dbo].[ClaimWaitingPeriod] " +
+                    "cwp WHERE pir.Id = '" + request.PhoneId + "'  AND cwp.Active = '1';");
+                if (waitingdayscount.WaitingPeriod>0)
+                {
+                    response.Success = false;
+                    response.ErrorMsg = $"Your Policy is still in waiting period, you have {waitingdayscount.RemainingDays } remaining days to make a claim";
+                    passedForProcessing = false;
+                    claimstatus = (int)ClaimStatus.declined;
+                    // return response;
+
+                }
                 int claimcount = 0;
                 var phonedetails = await _db.Connection.QueryFirstOrDefaultAsync<PhoneDetails>("select [IMEINumber],[PhoneCost],[IMEINumber1],[IMEINumber1],[IMEINumber2]" +
                       " from [dbo].[PhoneInsuranceRequest] where Id='" + request.PhoneId + "'");
@@ -407,6 +448,7 @@ namespace API.Infrastructure.Application.ClaimManager
                     claimstatus = (int)ClaimStatus.declined;
                     //return response;
                 }
+
                 string abstractfile = "", PhoneUpload = "", ImeiUpload = "",deactivatitionproof="";
                 byte[] deactivattionproofbyte= null;
                 if (request.ClaimType == ClaimType.theft)
@@ -451,6 +493,8 @@ namespace API.Infrastructure.Application.ClaimManager
                         passedForProcessing = false;
                         claimstatus = (int)ClaimStatus.declined;
                     }
+
+                     claimstatus = (int)ClaimStatus.pending;
                 }
                 if (request.ClaimType == ClaimType.damage)
                 {
@@ -604,8 +648,8 @@ namespace API.Infrastructure.Application.ClaimManager
                     {   
                         if(expires.OTP.ToLower()== verifyOTP.OTP.ToLower())
                         {
-                            string authquery = "select distinct Convert(nvarchar(50),Id) as Id,ShopName,Phonenumber,Email,ContactName,loginType,shopType,[PartnerId] as ProductCode," +
-                                "[ShopLocation] as [Location] from vw_portalauth_new where" +
+                            string authquery = "select distinct  Convert(nvarchar(50),Id) as Id,ShopName,Phonenumber,Email,FullName,ContactName,loginType,shopType,[PartnerId] as ProductCode," +
+                                "[ShopLocation] as [Location],isnull(ShopId,'0') as ShopId  from vw_portalauth_new where" +
                       " Id ='" + verifyOTP.UserId + "'";
                         var repairshop = await _db.Connection.QueryFirstOrDefaultAsync<RepairShopDTO>(authquery);
 
@@ -677,6 +721,13 @@ namespace API.Infrastructure.Application.ClaimManager
         public string? IMEINumber2 { get; set; }
         public string? PhoneCost { get; set; } = null;
 
+    }
+
+    public class WaitingPeriodDTO
+    {
+        public int  WaitingPeriod  { get; set; }
+        public int DaysElapsed { get; set; }
+        public int RemainingDays { get; set; }
     }
     public class PhoneCostDetails
     {

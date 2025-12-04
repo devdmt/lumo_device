@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using DAL.Model.Safaricom;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using DAL.ModelView.ClaimDTO;
 
 namespace DAL.ModelView.Safaricom
 {
@@ -125,6 +126,17 @@ namespace DAL.ModelView.Safaricom
         public FileDetails? phoneUpload { get; set; }
         public FileDetails? ImeiUpload { get; set; }  
 
+    }
+    public class RecordExcessPaymentDTO
+    {
+        public string? ClaimId { get; set; }
+        public double? ExcessAmount { get; set; }
+        public ExcessPaymentMode? PaymentMode { get; set; }
+        public ExcessPaymentStatus? PaymentexcessStatus { get; set; }
+        public string? TransactionRef { get; set; }
+        public string? userId { get; set; }
+        public string? shopId { get; set; }
+        public string? Remarks { get; set; }
     }
     public class ClaimRequestDTO
     {

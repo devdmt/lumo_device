@@ -20,6 +20,17 @@ namespace DAL.ModelView.Safaricom
         public string? SecondaryContact { get; set; }
         public string? CreatedBy {  get; set; } 
     }
+    public class PhoneInsuranceRequestUpload:PhoneInsuranceRequest
+    {
+        public long Id { get; set; }
+        public string? Imei{get;set;}
+        public string? UploadReference { get; set; }
+        public string? LoanRefNumber  { get; set; }
+      public string? RepaymentTerms { get; set; }
+       public string? LoanAmount { get; set; }
+       public string? InterestRate { get; set; }
+      public string? PremiumPaid { get; set; }
+    } 
     public class PhoneInsuranceRequest
     {
      

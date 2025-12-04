@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # SQL Server Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: lumodevice-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=FutureisToday@254
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    networks:
+      - lumodevice-network
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P FutureisToday@254 -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # Redis Cache (Optional)
+  redis:
+    image: redis:7-alpine
+    container_name: lumodevice-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - lumodevice-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  # LumoDevice API Application
+  lumodevice-api:
+    build:
+      context: .
+      dockerfile: LumoDevice/Dockerfile
+    container_name: lumodevice-api
+    ports:
+      - "8080:80"
+      - "8443:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - DatabaseSettings__DBProvider=mssql
+      - DatabaseSettings__ConnectionString=Data Source=sqlserver;User Id=sa;Password=FutureisToday@254;Initial Catalog=LumoCore;Integrated Security=False;MultipleActiveResultSets=True;TrustServerCertificate=True
+      - DatabaseSettings__Cypher=U2FubGFtQDEyMw==
+      - CacheSettings__UseDistributedCache=false
+      - CacheSettings__PreferRedis=false
+      - CacheSettings__RedisURL=redis:6379
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - lumodevice-network
+    volumes:
+      - ./LumoDevice/Configurations:/app/Configurations:ro
+      - ./LumoDevice/Files:/app/Files:ro
+      - ./LumoDevice/Logs:/app/Logs:rw
+    restart: unless-stopped
+
+volumes:
+  sqlserver-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  lumodevice-network:
+    driver: bridge
+

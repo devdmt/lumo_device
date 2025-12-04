@@ -1,0 +1,61 @@
+#See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
+
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
+
+RUN ["apt-get", "update"]
+RUN ["apt-get", "-y", "install", "libgdiplus"]
+RUN ["apt-get", "-y", "install", "xvfb", "libfontconfig", "wkhtmltopdf"]
+RUN ["apt-get", "-y", "install", "libc6-dev"]
+RUN ["apt-get", "-y", "install", "openssl"]
+RUN ["apt-get", "-y", "install", "libssl1.1"]
+RUN ["apt-get", "-y", "install", "fontconfig"]
+COPY src/Wallet.Api/Fonts/NotoSerifEthiopic.ttf .
+RUN ["install", "-m644", "NotoSerifEthiopic.ttf", "/usr/share/fonts/truetype/"]
+
+WORKDIR /app
+EXPOSE 80
+
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+ARG BUILD_CONFIGURATION=Release
+WORKDIR /src
+#COPY Wallet.Api.csproj src/Wallet.Api/
+COPY ["src/Wallet.Api/Wallet.Api.csproj", "src/Wallet.Api/"]
+COPY ["src/common/Paymenta.Common.EventBus/Paymenta.Common.EventBus.csproj", "src/common/Paymenta.Common.EventBus/"]
+COPY ["src/common/Paymenta.Common.IntegrationEvents/Paymenta.Common.IntegrationEvents.csproj", "src/common/Paymenta.Common.IntegrationEvents/"]
+COPY ["src/Wallet.Domain/Wallet.Domain.csproj", "src/Wallet.Domain/"]
+COPY ["src/common/Paymenta.Common.Domain/Paymenta.Common.Domain.csproj", "src/common/Paymenta.Common.Domain/"]
+COPY ["src/common/Paymenta.Common.Store/Paymenta.Common.Store.csproj", "src/common/Paymenta.Common.Store/"]
+COPY ["src/common/Paymenta.Common/Paymenta.Common.csproj", "src/common/Paymenta.Common/"]
+COPY ["src/Wallet.Store/Wallet.Store.csproj", "src/Wallet.Store/"]
+RUN dotnet restore "./src/Wallet.Api/Wallet.Api.csproj"
+COPY . .
+WORKDIR "/src/src/Wallet.Api"
+RUN dotnet build "./Wallet.Api.csproj" -c $BUILD_CONFIGURATION -o /app/build
+
+# Install the EF Core tools
+RUN dotnet tool install --global dotnet-ef --version 6.0.0
+ENV PATH="$PATH:/root/.dotnet/tools"
+
+
+FROM build AS publish
+ARG BUILD_CONFIGURATION=Release
+RUN dotnet publish "./Wallet.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+COPY --from=build /src/src/Wallet.Api/libwkhtmltox.dll .
+COPY --from=build /src/src/Wallet.Api/libwkhtmltox.dylib .
+COPY --from=build /src/src/Wallet.Api/libwkhtmltox.so .
+COPY --from=build /src/src/Wallet.Api/styles.css .
+COPY --from=build /src/src/Wallet.Api/Templates/* ./Templates/
+COPY --from=build /src/src/Wallet.Api/Fonts/* ./Fonts/
+
+ENTRYPOINT ["dotnet", "Paymenta.Wallet.Api.dll"]
+#ENTRYPOINT ["sh","-c", "dotnet ef database update && dotnet Paymenta.Wallet.Api.dll"]
+
+COPY startup.sh /app/startup.sh
+RUN chmod +x /app/startup.sh
+
+# Set the entry point
+#ENTRYPOINT ["/app/startup.sh"]

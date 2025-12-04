@@ -86,7 +86,7 @@ namespace DAL.ModelView.ClaimDTO
         public int PageSize { get;set;}
         public string[]? DateRange { get; set; }
     }
-    
+
     //public class ClaimsDTODetails : ClaimsDTO
     //{
     //    public string? imagePhoneUploadbase64 { get; set; }
@@ -94,7 +94,7 @@ namespace DAL.ModelView.ClaimDTO
     //    public string? imageIMEIUploadbase64 { get; set; }
     //     public string? deactivationProof { get;set;
 
-          
+
     //    }
     //    //public string? deactivationProof { get
 
@@ -139,6 +139,7 @@ namespace DAL.ModelView.ClaimDTO
         public ClaimStatus? claimStatus { get; set; }
         public string? PartId { get; set; }
         public string? IMEINumber { get; set; }
+        public string? IMEINO { get; set; }
         public string? IMEINumber1 { get; set; }
         public string? IMEINumber2 { get; set; }
         public string? LabourCost { get; set; }
@@ -156,10 +157,38 @@ namespace DAL.ModelView.ClaimDTO
         public string? ErrorMessage { get; set; }
         public string? Approved { get; set; }
         public string? passedForProcessing { get; set; }
-        public string? ShopName  { get; set; }  
-            public string? ContactName { get; set; }
+        public string? ShopName { get; set; }
+        public string? ContactName { get; set; }
+        public string? ExcessAmount { get; set; }
+        public ExcessPaymentStatus? ExcessPaymentStatus {get;set;}
+        public ExcessPaymentMode? ExcessPaymentMode { get; set; }
+        
+        public string? ExcessPaymentReference { get; set; }
 
     }
+
+     [JsonConverter(typeof(JsonStringEnumConverter))]
+          public enum ExcessPaymentStatus
+    {
+                    [EnumMember(Value = "Pending")]
+                    Pending = 1,
+                    [EnumMember(Value = "Paid")]
+                    Paid = 2,
+                  
+    }   
+
+     [JsonConverter(typeof(JsonStringEnumConverter))]
+          public enum ExcessPaymentMode
+    {
+                    [EnumMember(Value = "Mpesa")]
+                    Mpesa = 1,
+                    [EnumMember(Value = "Cash")]
+                    Cash = 2,
+                    [EnumMember(Value = "Bank")]
+                    Bank = 3,
+                    [EnumMember(Value = "Bank Transfer")]
+                    BankTransfer = 4,
+    }   
      public class Devicesearch
     {
          public string? Idnumber { get; set; }

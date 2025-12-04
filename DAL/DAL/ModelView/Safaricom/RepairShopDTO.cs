@@ -10,8 +10,10 @@ namespace DAL.ModelView.Safaricom
         public int shopType {  get; set; }  
         public string? Email { get; set; } 
         public string? loginType { get; set; }
+        public string? FullName { get; set; }
         public string? ContactName { get; set; }
         public string? ShopOwner { get; set; }
+        public string? ShopId { get; set; }
         public string? PartnerCode { get; set; }
         //public string? ProductCode { get; set; }
     }

@@ -29,6 +29,8 @@ namespace API.Infrastructure.Interface
         Task<ResponseDTO> AppproveDispatch(Approvedispatch upload);
         Task<ResponseDTO> ResendDispatchCode(Approvedispatch upload);
         Task<ResponseDTO> SendNotification(SendNotificationRequest notification);
+        Task<ResponseDTO> RecordExcessPayment(RecordExcessPaymentDTO excessPaymentDTO);
+        
         Task<ClaimRequestDTOSaveForLaterDetails> QuerySaveForLaterClaim(string Id);
         Task AddActions(ActionsDTO actionsDTO);
         Task AddApprovalNotification(ActionsApprovalDTO action);

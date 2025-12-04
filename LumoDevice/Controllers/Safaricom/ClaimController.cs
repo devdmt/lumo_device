@@ -16,7 +16,7 @@ namespace LumoDevice.API.Controllers.Safaricom
 {
     public class ClaimController : ClaimApiController
     {
-        readonly IClaimPortal _claim;
+        readonly IClaimPortal _claim;   
         readonly Isettings _isettings;
         readonly SecuritySettings _security;
         readonly ICurrentUser _user;
@@ -104,7 +104,7 @@ namespace LumoDevice.API.Controllers.Safaricom
 
             try
             {
-                var claim =  _user.GetUserClaims();
+                    
                 var result = await _claim.SaveForLaterClaim(request);
 
                 return Ok(result);
@@ -272,13 +272,14 @@ namespace LumoDevice.API.Controllers.Safaricom
                 {
                     new Claim("phonenumber", result.Result.Phonenumber),
                     new Claim("userid",result.Result.Id.ToString()),
-                    new Claim("name",result.Result.ContactName??""),
+                    new Claim("name",result.Result.FullName??""),
                     new Claim("shopname",result.Result.ShopName),
                     new Claim("PartnerCode",result.Result.PartnerCode??""),
                     //new Claim("productCode",result.Result.ProductCode??""),
                     new Claim("shoptype",result.Result.shopType.ToString()??""),
                     new Claim("location",result.Result.Location??""),
                     new Claim("loginType",result.Result.loginType??""),
+                    new Claim("shopId",result.Result.ShopId??"0"),
                    //new Claim(LumoClaims.PhoneNumber, result.Result.Phonenumber),
                    // new Claim(LumoClaims.UserId,result.Result.Id.ToString()),
                    // new Claim(LumoClaims.FullName,result.Result.ContactName??""),
@@ -330,6 +331,23 @@ namespace LumoDevice.API.Controllers.Safaricom
             }
             return BadRequest("Please provide a valid imei and Id number");
         }
+
+         [HttpPost("RecordPayments")]
+        public async Task<IActionResult> RecordPayments([FromBody] RecordExcessPaymentDTO request)
+        {
+
+            try
+            {
+                var result = await _claim.RecordExcessPayment(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _isettings.LogRequests(ex.Message, "Authenticate", RequestType.Error);
+            }
+            return BadRequest("Unable to authenticate you please try again");
+        }
+
         [HttpPost("getDamagedParts")]
         public async Task<IActionResult> getDamagedParts([FromBody] PartsQuery parts)
         {

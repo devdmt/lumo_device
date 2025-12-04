@@ -8,8 +8,8 @@ namespace API.Infrastructure.Interface
     {
        // Task<ResponseDTO> PurchaseInsurance(List<PhoneInsuranceRequest> request);
         Task<OnboardingResponseDTO> PurchaseInsurance(PhoneInsuranceRequest request);
-        Task<OnboardingResponseDTO> PurchaseUploadInsurance(List<PhoneInsuranceRequest> request);
-       
+       // Task<OnboardingResponseDTO> PurchaseUploadInsurance(List<PhoneInsuranceRequest> request);
+        Task<OnboardingResponseDTO> submitUploads(string refno);    
         Task<ResponseDTO> SubmitClaim(ClaimRequestDTO request);
         Task<ClaimResponseDetails> GetCustomerClaims(string request); 
         Task<ResponseDTO> ReplaceClaimRequest(ReplaceRequestDeviceDTO request);

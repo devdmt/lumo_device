@@ -1,0 +1,29 @@
+# This is an example override file for local development
+# Copy this file to docker-compose.override.yml and customize as needed
+# docker-compose.override.yml is automatically loaded by docker-compose
+
+version: '3.8'
+
+services:
+  lumodevice-api:
+    # Override environment variables for local development
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      # Mount local configuration files for easier development
+    volumes:
+      - ./LumoDevice/Configurations:/app/Configurations:ro
+      - ./LumoDevice/Files:/app/Files:ro
+      - ./LumoDevice/Logs:/app/Logs:rw
+    # Enable hot reload (if using .NET watch)
+    # command: dotnet watch run --urls http://+:80
+
+  sqlserver:
+    # Expose SQL Server Management Studio access
+    ports:
+      - "1433:1433"
+
+  redis:
+    # Expose Redis CLI access
+    ports:
+      - "6379:6379"
+

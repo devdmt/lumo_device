@@ -9,6 +9,9 @@ using Mapster;
 using DocumentFormat.OpenXml.Vml;
 using DAL.Model.ClaimDTO;
 using DAL.ModelView.ClaimDTO;
+using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Office2010.Excel;
+using Microsoft.Office.Interop.Excel;
 
 namespace API.Infrastructure.Application.ClaimManager
 {
@@ -56,14 +59,21 @@ namespace API.Infrastructure.Application.ClaimManager
 
                    string claimsquery = "SELECT a.claimStatus,a.ClaimType,a.Id,b.PhoneModel,b.PhoneModel,a.Approved,  Convert(nvarchar,a.ClaimDate,100) as ClaimDate,a.ClaimRefNumber,a.claimStatus,a.CustomerName,a.DamagePart,a.IDNumber as IDNumber, " +
                     "CONCAT(b.IMEINumber,'|'+b.IMEINumber1 ,'|'+ b.IMEINumber2) as IMEINO ,a.ReplacementCost," +
-                    " Replace(a.IncidentDate,' 12:00AM','') as IncidentDate,a.claimStatus,a.Narration,a.PartCost,a.ErrorMessage as Response,Convert(nvarchar,a.DispatchedOn,105) as DispatchedOn,a.Dispatched from [dbo].[claimRequests]  a, [dbo].[PhoneInsuranceRequest] b  " +
-                    "where a.[PhoneId] = b.Id  ";
+                    " Replace(a.IncidentDate,' 12:00AM','') as IncidentDate," +
+                    "a.claimStatus,a.Narration,a.PartCost,a.ErrorMessage as Response" +
+                    ",Convert(nvarchar,a.DispatchedOn,105) as DispatchedOn,a.Dispatched ,c.PaymentMode as ExcessPaymentMode,c.Amount as ExcessAmount," +
+                    "c.PaymentStatus as ExcessPaymentStatus," +
+                    "c.Narrations as ExcessNarration,c.PaymentReference  from dbo.claimRequests a" +
+                    "  INNER JOIN dbo.PhoneInsuranceRequest b ON a.PhoneId = b.Id " +
+                    " LEFT OUTER JOIN dbo.ClaimExcess c ON a.Id = c.ClaimRequestId ";
                 if (request.ClaimStatus != null)
                 {
                     claimsquery = "SELECT a.ClaimType,a.Id,b.PhoneModel,b.PhoneModel,  Convert(nvarchar,a.ClaimDate,100) as ClaimDate,a.ClaimRefNumber,a.claimStatus,a.CustomerName,a.DamagePart,a.IDNumber as IDNumber, CONCAT(b.IMEINumber,'|'+b.IMEINumber1 ,'|'+ b.IMEINumber2) as IMEINO ," +
-                    " Replace(a.IncidentDate,' 12:00AM','') as IncidentDate ,a.Approved,a.claimStatus,a.Narration,a.PartCost,a.ErrorMessage as Response,Convert(nvarchar,a.DispatchedOn,105) as DispatchedOn,a.Dispatched from [dbo].[claimRequests]  a, [dbo].[PhoneInsuranceRequest] b  " +
-                    "where a.[PhoneId] = b.Id  " +
-                    " and claimStatus=" + (int)request.ClaimStatus + "  ";
+                    " Replace(a.IncidentDate,' 12:00AM','') as IncidentDate ,a.Approved,a.claimStatus,a.Narration,a.PartCost,a.ErrorMessage as Response," +
+                    "Convert(nvarchar,a.DispatchedOn,105) as DispatchedOn,a.Dispatched,c.Amount as ExcessAmount,c.PaymentStatus as " +
+                    "ExcessPaymentStatus,c.Narrations as ExcessNarration ,c.PaymentMode as ExcessPaymentMode,c.PaymentReference from dbo.claimRequests a " +
+                    " INNER JOIN dbo.PhoneInsuranceRequest b ON a.PhoneId = b.Id  LEFT OUTER JOIN dbo.ClaimExcess c" +
+                    " ON a.Id = c.ClaimRequestId and claimStatus=" + (int)request.ClaimStatus + "  ";
                 }
                 claimsquery = claimsquery + criteria;
                 if (Convert.ToBoolean(request.Dispatch))

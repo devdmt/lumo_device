@@ -130,6 +130,7 @@ namespace API.Infrastructure.Application.Clients
                 _param.Add("model", status.model);
                 _param.Add("parts", status.parts);
                 _param.Add("imeinumber", status.IMEINumber);
+                _param.Add("@verified", null);
                 _param.Add("Skip", status.Skip);
                 _param.Add("Take", status.Take);
                 _param.Add("NoOfRecords", NoOfRecords, direction: ParameterDirection.Output);

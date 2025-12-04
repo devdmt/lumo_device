@@ -16,10 +16,11 @@ namespace API.Infrastructure.Interface
     {
          Task<ResponseDTO<List<ClaimsDTO>>> GetAllClaims(SearchCriteria status);
         Task<ResponseDTO<List<ClaimsDTO>>> GetAutoApproved(ApprovalDTO status);
-         Task<ClaimsDTODetails> GetClaim(long id);
+         Task<ClaimsDTODetails> GetClaim(long id);                      
          Task<ResponseDTO<List<CustomerDTO>>> GetCustomers(Devicesearch status);
 
          Task<ResponseDTO<List<DeviceDTO>>> GetDevices(Devicesearch devicesearch);
+        Task<ResponseDTO<PolicyUploadResult>> UploadPolicyPurchasesAsync(PolicyUploadRequest request);
        // Task<List<DeviceModels>> GetDeviceModel();
        
       // Task<Response<FileResponse>> ClaimReport(ReportDTO status);  

@@ -1,4 +1,5 @@
 ﻿using API.Infrastructure.Interface;
+using Azure.Core;
 using DAL;
 using DAL.ModelView;
 using DAL.ModelView.Safaricom;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
 //using Newtonsoft.Json;
 using System.Data;
+using System.Globalization;
 
 namespace API.Infrastructure.Application.SafaricomManager
 {
@@ -99,12 +101,20 @@ namespace API.Infrastructure.Application.SafaricomManager
             return response;
         }
 
-        public async Task<OnboardingResponseDTO> PurchaseUploadInsurance(List<PhoneInsuranceRequest> requests)
+        public async Task<OnboardingResponseDTO> submitUploads(string refno)
         {
             var response = new OnboardingResponseDTO();
             try
             {
+                string partnerId = "";
+                var requests = new List<PhoneInsuranceRequestUpload>();
                 // _isettings.LogRequests(JsonConvert.SerializeObject(request),"PurchaseInsurance",RequestType.Comparison);
+                var requestData = await _db.Connection.QueryAsync<PhoneInsuranceRequestUpload>("SELECT [Id],[PhoneNumber],[CustomerName]" +
+                    " ,[SecondaryContactName],[SecondaryContact] ,[IdNumber],[DateOfBirth],[PhoneModel],[ImeiNumber] as Imei,[SerialNumber]" +
+                    ",[PhoneCost] ,[MpesaRef] ,[ModeOfPurchase] ,[LoanRefNumber]  ,[RepaymentTerms],[LoanAmount],[InterestRate] " +
+                    ",[PremiumPaid] ,[UploadReference],[UploadFailed]  ,[Error] ,[RowNumber],[CreatedAtUtc],0 as PolicyStatus ,PurchaseDate " +
+                    "FROM [dbo].[CustomerDevicePurchases_Temp] where UploadReference='" + refno + "'");
+                requests = requestData.Adapt<List<PhoneInsuranceRequestUpload>>();
                 foreach (var request in requests)
                 {
                     if (request == null)
@@ -112,73 +122,64 @@ namespace API.Infrastructure.Application.SafaricomManager
                         response.ErrorMsg = "invalid request, please  check the data";
                         response.Success = false;
 
-                        return response;
+                        continue;
                     }
 
-                    if (request.IMEINumber == null)
+                    if (request.Imei == null)
                     {
                         response.ErrorMsg = "Invalid IMEI, please  check the data";
                         response.Success = false;
 
-                        return response;
+                        continue;
                     }
                     if (string.IsNullOrEmpty(request.CustomerName))
                     {
                         response.ErrorMsg = "Invalid customer name, please  check the data";
                         response.Success = false;
 
-                        return response;
+                        continue;
                     }
                     if (string.IsNullOrEmpty(request.SerialNumber))
                     {
                         response.ErrorMsg = "Invalid serial number";
                         response.Success = false;
 
-                        return response;
+                        continue;
                     }
                     if (Convert.ToDouble(request.PhoneCost) == 0)
                     {
                         response.ErrorMsg = "Invalid Phone cost";
                         response.Success = false;
 
-                        return response;
+                        continue;
                     }
                     if (request.ModeOfPurchase == null)
                     {
                         response.ErrorMsg = "Invalid Mode of Purchase";
                         response.Success = false;
 
-                        return response;
+                        continue;
                     }
                     if (string.IsNullOrEmpty(request.PhoneModel))
                     {
                         response.ErrorMsg = "Invalid Phone Model";
                         response.Success = false;
-
-                        return response;
+                        continue;
+                        
                     }
 
-                    int partnerId = (int)_db.Connection.ExecuteScalar("select Id as partnerId from  [dbo].[Partners] where [PartnerCode]='" + request.PartnerCode + "'");
-                    if (partnerId == 0)
-                    {
-                        response.ErrorMsg = "Invalid Partner Code";
-                        response.Success = false;
-                        response.ResponseId = request.RequestId ?? "";
-                        return response;
-                    }
-                    int transactionId = (int)_db.Connection.ExecuteScalar(" select count(1) from [dbo].[PhoneInsuranceRequest] where RequestId='" + request.RequestId + "' and PartnerID='" + partnerId + "'");
-                    if (transactionId > 0)
-                    {
-                        response.ErrorMsg = "Request already exists";
-                        response.Success = false;
-                        response.ResponseId = request.RequestId ?? "";
-                        return response;
-                    }
-                    string? LoanRefNumber = request.LoanPurchase?.LoanRefNumber;
-                    string? RepaymentTerms = request.LoanPurchase?.RepaymentTerms;
-                    double? LoanAmount = request.LoanPurchase?.LoanAmount;
-                    double? InterestRate = request.LoanPurchase?.InterestRate;
-                    double? PremiumPaid = request.LoanPurchase?.PremiumPaid;
+                   
+                    string? LoanRefNumber = request.LoanRefNumber;
+                    string? RepaymentTerms = request.RepaymentTerms;
+                    double LoanAmount = 0;
+                      double.TryParse(request.LoanAmount, NumberStyles.Any,
+                          CultureInfo.InvariantCulture, out LoanAmount);
+                    double InterestRate = 0;
+                      double.TryParse(request.InterestRate, NumberStyles.Any,
+                          CultureInfo.InvariantCulture, out InterestRate);
+                    double PremiumPaid = 0; 
+                     double.TryParse(request.PremiumPaid, NumberStyles.Any,
+                          CultureInfo.InvariantCulture, out PremiumPaid);
                     var customer_Id = _db.Connection.ExecuteScalar("select isnull(Id,0) as customerId from  [dbo].[phoneInsuranceCustomers] where [IdNumber]='" + request.Idnumber + "' and " +
                         "right(PhoneNumber,9)=right('" + request.Phonenumber + "',9)") ?? 0;
                     if (Convert.ToInt64(customer_Id) == 0)
@@ -197,12 +198,23 @@ namespace API.Infrastructure.Application.SafaricomManager
                         customer_Id = await AddCustomers(custdetails);
                     }
                     string ImeiNumber = "", ImeiNumber1 = "", ImeiNumber2 = "";
-                    if (request.IMEINumber.Count > 0)
+
+                    var imei = request.Imei;
+                    // If 'imei' contains ',', ':' or ';', split and assign to ImeiNumber, ImeiNumber1, ImeiNumber2
+                    if (!string.IsNullOrEmpty(imei))
                     {
-                        ImeiNumber = request.IMEINumber[0];
-                        ImeiNumber1 = request.IMEINumber.Count > 1 ? request.IMEINumber[1] : "";
-                        ImeiNumber2 = request.IMEINumber.Count > 2 ? request.IMEINumber[2] : "";
+                        // Split imei by ',', ':', or ';'
+                        var delimiters = new char[] { ',', ':', ';' };
+                        var splitImeis = imei.Split(delimiters, StringSplitOptions.RemoveEmptyEntries)
+                                             .Select(x => x.Trim())
+                                             .ToList();
+
+                        ImeiNumber  = splitImeis.Count > 0 ? splitImeis[0] : "";
+                        ImeiNumber1 = splitImeis.Count > 1 ? splitImeis[1] : "";
+                        ImeiNumber2 = splitImeis.Count > 2 ? splitImeis[2] : "";
                     }
+
+                   
                     string Id = Guid.NewGuid().ToString();
                     //string query = "INSERT INTO [dbo].[PhoneInsuranceRequest] ([Id] ,[PartnerID], [ProductID] ,[CustomerName]  ,[PhoneModel] ,[RequestId] ,[IMEINumber] ,[PhoneCost] ,[ModeOfPurchase] ,[LoanRefNumber]," +
                     //    "[RepaymentTerms],[LoanAmount] ,[InterestRate] ,[PremiumPaid] ,[PurchaseDate] ,[Processed] ,[RequestedOn] ,[PolicyStatus]," +
@@ -218,15 +230,15 @@ namespace API.Infrastructure.Application.SafaricomManager
                     param.Add("@ProductID", request.ProductID);
                     param.Add("@CustomerName", request.CustomerName);
                     param.Add("@PhoneModel", request.PhoneModel);
-                    param.Add("@RequestId", request.RequestId);
+                    param.Add("@RequestId", request.UploadReference);
                     param.Add("@IMEINumber", ImeiNumber);
                     param.Add("@PhoneCost", request.PhoneCost ?? "");
                     param.Add("@ModeOfPurchase", request.ModeOfPurchase);
                     param.Add("@LoanRefNumber", LoanRefNumber ?? "");
                     param.Add("@RepaymentTerms", RepaymentTerms ?? "");
-                    param.Add("@LoanAmount", LoanAmount ?? 0);
-                    param.Add("@InterestRate", InterestRate ?? 0);
-                    param.Add("@PremiumPaid", PremiumPaid ?? 0);
+                    param.Add("@LoanAmount", LoanAmount );
+                    param.Add("@InterestRate", InterestRate );
+                    param.Add("@PremiumPaid", PremiumPaid );
                     param.Add("@PurchaseDate", request.PurchaseDate ?? DateTime.Now.ToString());
                     param.Add("@PolicyStatus", (int)request.PolicyStatus);
                     param.Add("@PhoneInsuranceCustomerId", customer_Id);
@@ -241,15 +253,14 @@ namespace API.Infrastructure.Application.SafaricomManager
                     string query = "AddInsuranceRequest";
                     await _db.Connection.ExecuteAsync(query, param, commandType: System.Data.CommandType.StoredProcedure);
                     response.ErrorMsg = "Your request was accepted successfuly";
+                    _db.Connection.Execute("delete from CustomerDevicePurchases_Temp where Id=" + request.Id + "");
                     response.Success = true;
                     response.ResponseId = request.RequestId ?? "";
                     response.CustomerId = customer_Id.ToString();
                     response.TransactionId = Id.ToString();
 
-
-                    return response;
-
                 }
+                return response;
             }
             catch (Exception ex)
             {

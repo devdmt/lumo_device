@@ -8,6 +8,7 @@ using API.Infrastructure.Auth;
 using Microsoft.AspNetCore.Hosting;
 using API.Infrastructure.Localization;
 using FCB.Infrastructure.Caching;
+using API.Infrastructure.Security;
 
 namespace API.Infrastructure
 {
@@ -18,6 +19,7 @@ namespace API.Infrastructure
             return services
                 .AddApiVersioning()
                 .AddAuth(config)
+                .AddPayloadDecryption(config)
                 //  .AddCorsPolicy(config)
                 .AddExceptionMiddleware()
                 .AddLocalization(config)
@@ -44,18 +46,19 @@ namespace API.Infrastructure
             //}
 
             builder
-             
+
                .UseOpenApiDocumentation(config)
               .UseExceptionMiddleware()
                 .UseRouting()
                  .UseCorsPolicy()
                 //.UseAuthentication()
                 .UseAuthorization()
+                .UsePayloadDecryption(config)
                  .UseRequestLogging(config)
                 .UseForwardedHeaders(new ForwardedHeadersOptions
                 {
                     ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-                }); 
+                });
 
 
             return builder;

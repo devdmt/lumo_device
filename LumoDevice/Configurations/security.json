@@ -25,5 +25,10 @@
       "ApiScope": "api://<Your ClientId of the AzureAd Server App Registration>/access_as_user",
       "OpenIdClientId": "<Your ClientId of the AzureAd Client App Registration>"
     }
+  },
+  "PayloadDecryptionOptions": {
+    "Enabled": true,
+    "EncryptionKey": "",
+    "EncryptedRoutes": "/api/saf/v1/PhoneInsurance/customeronboarding"
   }
 }
